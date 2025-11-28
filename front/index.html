@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>城市交通预测工作台</title>
+  <link rel="stylesheet" href="styles.css?v=4.0">
+  <script src="vendor/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="brand">
+        <span class="brand-badge">CityFlow AI</span>
+        <div class="brand-text">
+          <h1>城市无线数据流量预测控制台</h1>
+          <p>统一调度 LSTM / Transformer / RandomForest / ARIMA 预测模型，一站式完成特征组合与自回归预测。</p>
+        </div>
+      </div>
+      <nav class="header-actions">
+        <button type="button" id="open-docs" class="ghost-btn">API 文档</button>
+        <span class="health-indicator" id="health-indicator">检测中...</span>
+      </nav>
+    </header>
+
+    <div class="app-body">
+      <aside class="sidebar">
+        <section class="step-list">
+          <h2>操作步骤</h2>
+          <div class="step-item active current" data-step="1">
+            <span class="step-index">1</span>
+            <div>
+              <h3>选择模型</h3>
+              <p>挑选预测算法与预置配置。</p>
+            </div>
+          </div>
+          <div class="step-item" data-step="2">
+            <span class="step-index">2</span>
+            <div>
+              <h3>调整特征</h3>
+              <p>开启时间、周期、滞后或滚动特征。</p>
+            </div>
+          </div>
+          <div class="step-item" data-step="3">
+            <span class="step-index">3</span>
+            <div>
+              <h3>锁定区域</h3>
+              <p>指定测试区域与预测步长。</p>
+            </div>
+          </div>
+          <div class="step-item" data-step="4">
+            <span class="step-index">4</span>
+            <div>
+              <h3>生成预测</h3>
+              <p>获取 3 天可视化与全量指标。</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="summary-card">
+          <h2>当前配置</h2>
+          <ul id="summary-list">
+            <li><span>模型领域</span><strong class="value muted">—</strong></li>
+            <li><span>预测算法</span><strong class="value muted">—</strong></li>
+            <li><span>模型配置</span><strong class="value muted">—</strong></li>
+            <li><span>预测区域</span><strong class="value muted">—</strong></li>
+            <li><span>Horizon</span><strong class="value muted">默认 6</strong></li>
+            <li><span>特征</span><strong class="value muted">等待选择</strong></li>
+          </ul>
+        </section>
+
+        <section class="roadmap-card">
+          <h2>功能预留</h2>
+          <ul>
+            <li>⚙️ 自定义假日与特殊事件</li>
+            <li>🧹 异常点自动修复</li>
+            <li>🔁 多模型加权融合</li>
+            <li>📦 预测结果批量导出</li>
+          </ul>
+        </section>
+      </aside>
+
+      <main class="main-content">
+        <section class="card control-card" id="control-panel">
+          <header>
+            <div>
+              <h2>配置预测任务</h2>
+              <p>自由组合算法和特征工程，系统会匹配最合适的预训练模型并执行滚动自回归预测。</p>
+            </div>
+            <button type="button" id="reset-form" class="ghost-btn small">重置</button>
+          </header>
+
+          <form id="control-form">
+            <div class="form-row">
+              <label for="model-category">模型领域</label>
+              <select id="model-category" name="model_category" required>
+                <option value="" disabled selected>请选择模型领域</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <label for="model-type">预测算法</label>
+              <select id="model-type" name="model_type" required>
+                <option value="" disabled selected>请选择算法</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <label for="variant-id">模型配置</label>
+              <select id="variant-id" name="variant_id">
+                <option value="" selected>自动匹配 (根据特征)</option>
+              </select>
+              <small id="variant-hint" class="hint">将根据特征选择自动匹配预训练模型。</small>
+            </div>
+
+            <div class="form-row">
+              <label for="region-select">预测区域</label>
+              <select id="region-select" name="region" required>
+                <option value="" disabled selected>请选择区域</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <label for="horizon-input">自回归步长 (horizon)</label>
+              <input type="number" id="horizon-input" name="horizon" min="1" placeholder="默认 6">
+              <small class="hint">窗口大小将自动与 horizon 保持一致。</small>
+            </div>
+
+            <fieldset class="feature-group">
+              <legend>特征工程</legend>
+              <div id="feature-controls"></div>
+              <small class="hint">勾选所需特征组合。若配置与预训练模型不一致，系统将自动回退至默认组合。</small>
+            </fieldset>
+
+            <div class="submit-row">
+              <button type="submit" id="run-btn" class="primary-btn">运行预测</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="card result-card" id="result-panel">
+          <header>
+            <div>
+              <h2>预测结果</h2>
+              <p>展示完整测试集的真实值与预测值对比，并提供主流评估指标。</p>
+            </div>
+            <span id="model-pill" class="pill">等待运行</span>
+          </header>
+
+          <div id="message" class="status-banner info">尚未发起预测请求。</div>
+
+          <div id="progress-indicator" class="progress-indicator hidden">
+            <div class="progress-header">
+              <span id="progress-label">预测进度</span>
+              <span id="progress-percent">0%</span>
+            </div>
+            <div class="progress-bar"><span id="progress-bar-fill"></span></div>
+          </div>
+
+          <div class="metrics" id="metrics">
+            <div class="metric-card placeholder">
+              <h4>指标待更新</h4>
+              <p>运行预测后自动填充</p>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-controls">
+              <button type="button" id="reset-zoom" class="ghost-btn small">🔍 重置缩放</button>
+              <span class="chart-hint">💡 提示：滚动鼠标滚轮缩放，拖动图表平移</span>
+            </div>
+            <canvas id="forecast-chart" aria-label="预测对比图" role="img"></canvas>
+          </div>
+
+          <div class="table-card">
+            <div class="table-head">
+              <h3>数据列表 (<span id="preview-count">0</span> 条记录)</h3>
+              <button type="button" id="download-preview" class="ghost-btn small">导出 CSV</button>
+            </div>
+            <div class="table-scroll-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>序号</th>
+                    <th>时间戳</th>
+                    <th>真实值</th>
+                    <th>预测值</th>
+                  </tr>
+                </thead>
+                <tbody id="preview-body">
+                  <tr class="placeholder-row">
+                    <td colspan="4">运行预测后展示完整测试集数据。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div id="global-loader" class="global-loader hidden">
+    <div class="spinner"></div>
+    <span>正在执行预测，请稍候...</span>
+  </div>
+
+  <script src="main.js?v=4.0" type="module"></script>
+</body>
+</html>
