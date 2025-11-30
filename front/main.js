@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:8000|https://u825552-b1fe-66a05673.bjb2.seetacloud.com:8443";
+const API_BASE = "https://u825552-b1fe-66a05673.bjb2.seetacloud.com:8443";
 
 const state = {
   options: null,
