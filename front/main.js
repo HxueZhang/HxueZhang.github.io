@@ -159,10 +159,10 @@ async function fetchOptions() {
     }
     const data = await res.json();
     state.options = data;
-  state.featureDefinition = data.featureControls;
-  populateCategories(data.modelCategories);
+    state.featureDefinition = data.featureControls;
+    populateCategories(data.modelCategories);
     populateRegions(data.regions);
-  populateFeatureControls(data.featureControls);
+    populateFeatureControls(data.featureControls);
     refreshSummary();
     setMessage("准备就绪，请配置预测任务。", "success");
   } catch (error) {
@@ -598,8 +598,8 @@ function updateChart(plot) {
             mode: 'xy',
           },
           limits: {
-            x: {min: 'original', max: 'original'},
-            y: {min: 'original', max: 'original'}
+            x: { min: 'original', max: 'original' },
+            y: { min: 'original', max: 'original' }
           }
         }
       },
@@ -695,8 +695,8 @@ async function animatePrediction(result) {
             mode: 'xy',
           },
           limits: {
-            x: {min: 'original', max: 'original'},
-            y: {min: 'original', max: 'original'}
+            x: { min: 'original', max: 'original' },
+            y: { min: 'original', max: 'original' }
           }
         }
       },
@@ -777,17 +777,17 @@ async function handleSubmit(event) {
       throw new Error(detail.detail || `预测失败: ${res.status}`);
     }
     const result = await res.json();
-  state.lastResult = result;
-  renderMetrics(result.metrics);
-  setLoading(false);
-  setMessage("后台计算完成，正在绘制动态预测...", "info");
-  await animatePrediction(result);
+    state.lastResult = result;
+    renderMetrics(result.metrics);
+    setLoading(false);
+    setMessage("后台计算完成，正在绘制动态预测...", "info");
+    await animatePrediction(result);
     // 确保最终展示完整数据
     updateChart(result.plot);
     renderPreview(result.preview);
     setMessage(result.message || "预测完成。", "success");
-  const matched = result.feature_match !== false;
-  updateMatchPill(matched);
+    const matched = result.feature_match !== false;
+    updateMatchPill(matched);
   } catch (error) {
     console.error(error);
     hideProgress();
